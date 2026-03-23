@@ -3,6 +3,11 @@ plugins {
     alias(libs.plugins.kotlin.android)
 }
 
+val versionMajor = 0
+val versionMinor = 1
+val versionPatch = 5
+val versionBuild = System.getenv("BUILD_NUMBER")?.toIntOrNull() ?: 0
+
 android {
     namespace = "bypass.whitelist"
     compileSdk {
@@ -13,8 +18,8 @@ android {
         applicationId = "bypass.whitelist"
         minSdk = 23
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1"
+        versionCode = 1_000_000 * versionMajor + 1_000 * versionMinor + versionPatch + versionBuild
+        versionName = "$versionMajor.$versionMinor.$versionPatch"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

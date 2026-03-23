@@ -17,10 +17,16 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="Paste VK call link"
+            android:hint="Paste call link"
             android:inputType="textUri"
             android:singleLine="true"
             android:textSize="14sp" />
+
+        <Spinner
+            android:id="@+id/modeSpinner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="100dp" />
 
         <Button
             android:id="@+id/goButton"

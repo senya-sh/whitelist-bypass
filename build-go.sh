@@ -21,9 +21,16 @@ echo "Copying .aar to android-app/libs..."
 mkdir -p ../android-app/app/libs
 cp mobile.aar ../android-app/app/libs/mobile.aar
 
+echo "Building Pion relay for Android..."
+GOOS=linux GOARCH=arm64 go build -o ../android-app/app/src/main/jniLibs/arm64-v8a/librelay.so .
+GOOS=linux GOARCH=arm go build -o ../android-app/app/src/main/jniLibs/armeabi-v7a/librelay.so .
+echo "Pion relay built"
+
 echo "Copying hooks to assets..."
 mkdir -p ../android-app/app/src/main/assets
 cp ../hooks/joiner-vk.js ../android-app/app/src/main/assets/joiner-vk.js
 cp ../hooks/joiner-telemost.js ../android-app/app/src/main/assets/joiner-telemost.js
+cp ../hooks/pion-vk.js ../android-app/app/src/main/assets/pion-vk.js
+cp ../hooks/pion-telemost.js ../android-app/app/src/main/assets/pion-telemost.js
 
 echo "Done. .aar size: $(du -h mobile.aar | cut -f1)"

@@ -52,6 +52,28 @@ class TunnelVpnService : VpnService() {
         return START_STICKY
     }
 
+    override fun onDestroy() {
+        stop()
+        super.onDestroy()
+    }
+
+    fun updateStatus(status: VpnStatus) {
+        val nm = getSystemService(NotificationManager::class.java)
+        nm.notify(NOTIFICATION_ID, buildNotification(status.label))
+    }
+
+    private fun startForegroundNotification() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID, "VPN Tunnel", NotificationManager.IMPORTANCE_DEFAULT
+            )
+            val nm = getSystemService(NotificationManager::class.java)
+            nm.createNotificationChannel(channel)
+        }
+
+        startForeground(NOTIFICATION_ID, buildNotification(VpnStatus.STARTING.label))
+    }
+
     private fun start() {
         if (isRunning) return
 
@@ -133,27 +155,5 @@ class TunnelVpnService : VpnService() {
             .setContentIntent(openPending)
             .addAction(Notification.Action.Builder(null, "Disconnect", stopPending).build())
             .build()
-    }
-
-    fun updateStatus(status: VpnStatus) {
-        val nm = getSystemService(NotificationManager::class.java)
-        nm.notify(NOTIFICATION_ID, buildNotification(status.label))
-    }
-
-    private fun startForegroundNotification() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID, "VPN Tunnel", NotificationManager.IMPORTANCE_DEFAULT
-            )
-            val nm = getSystemService(NotificationManager::class.java)
-            nm.createNotificationChannel(channel)
-        }
-
-        startForeground(NOTIFICATION_ID, buildNotification(VpnStatus.STARTING.label))
-    }
-
-    override fun onDestroy() {
-        stop()
-        super.onDestroy()
     }
 }

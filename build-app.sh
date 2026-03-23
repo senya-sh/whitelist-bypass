@@ -6,6 +6,10 @@ cd "$ROOT/android-app"
 
 [ -f "./gradlew" ] || { echo "gradlew not found"; exit 1; }
 
+echo "Cleaning..."
+find app/build -name .DS_Store -delete 2>/dev/null
+./gradlew clean 2>&1 | tail -3
+
 echo "Building APK..."
 ./gradlew assembleDebug 2>&1 | tail -5
 

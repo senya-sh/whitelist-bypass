@@ -6,21 +6,45 @@ const fs = require('fs');
 var hooksDir = app.isPackaged
   ? path.join(process.resourcesPath, 'hooks')
   : path.join(__dirname, '..', 'hooks');
-const hookVk = fs.readFileSync(path.join(hooksDir, 'creator-vk.js'), 'utf8');
-const hookTelemost = fs.readFileSync(path.join(hooksDir, 'creator-telemost.js'), 'utf8');
-const logCapture = "window.__hookLogs=window.__hookLogs||[];var _ol=console.log;console.log=function(){_ol.apply(console,arguments);var m=Array.prototype.slice.call(arguments).join(' ');if(m.indexOf('[HOOK]')!==-1)window.__hookLogs.push(m)};";
+var logCapture = "window.__hookLogs=window.__hookLogs||[];var _ol=console.log;console.log=function(){_ol.apply(console,arguments);var m=Array.prototype.slice.call(arguments).join(' ');if(m.indexOf('[HOOK]')!==-1)window.__hookLogs.push(m)};";
+
+// Tunnel mode: 'dc' (DataChannel) or 'pion' (VP8 video)
+var tunnelMode = 'dc';
+var currentPlatform = 'vk';
+
+function loadHook(url) {
+  var isTelemost = url.includes('telemost.yandex');
+  var newPlatform = isTelemost ? 'telemost' : 'vk';
+  if (newPlatform !== currentPlatform && tunnelMode.startsWith('pion')) {
+    currentPlatform = newPlatform;
+    killRelay();
+    setTimeout(startRelay, 500);
+  } else {
+    currentPlatform = newPlatform;
+  }
+  if (tunnelMode === 'pion-video' || tunnelMode === 'pion-dc') {
+    var hookFile = isTelemost ? 'pion-telemost.js' : 'pion-vk.js';
+    var hook = fs.readFileSync(path.join(hooksDir, hookFile), 'utf8');
+    return logCapture + 'window.PION_PORT=9002;' + hook;
+  }
+  var hook = isTelemost
+    ? fs.readFileSync(path.join(hooksDir, 'creator-telemost.js'), 'utf8')
+    : fs.readFileSync(path.join(hooksDir, 'creator-vk.js'), 'utf8');
+  return logCapture + hook;
+}
 
 let mainWindow;
 let relayProcess;
 
 function startRelay() {
+  var port = tunnelMode.startsWith('pion') ? 9002 : 9000;
   const net = require('net');
   const sock = new net.Socket();
   sock.setTimeout(1000);
   sock.on('connect', () => {
     sock.destroy();
-    console.log('[relay] already running on :9000');
-    if (mainWindow) mainWindow.webContents.send('relay-log', 'Using existing relay on :9000');
+    console.log('[relay] already running on :' + port);
+    if (mainWindow) mainWindow.webContents.send('relay-log', 'Using existing relay on :' + port);
   });
   sock.on('error', () => {
     sock.destroy();
@@ -30,7 +54,7 @@ function startRelay() {
     sock.destroy();
     spawnRelay();
   });
-  sock.connect(9000, '127.0.0.1');
+  sock.connect(port, '127.0.0.1');
 }
 
 function spawnRelay() {
@@ -38,7 +62,11 @@ function spawnRelay() {
   var relayPath = app.isPackaged
     ? path.join(process.resourcesPath, relayName)
     : path.join(__dirname, '..', 'relay', relayName);
-  relayProcess = spawn(relayPath, ['--mode', 'creator'], {
+  var relayMode = 'creator';
+  if (tunnelMode === 'pion-video') relayMode = currentPlatform === 'telemost' ? 'telemost-video-creator' : 'vk-video-creator';
+  var relayArgs = ['--mode', relayMode];
+  if (tunnelMode.startsWith('pion')) relayArgs.push('--ws-port', '9002');
+  relayProcess = spawn(relayPath, relayArgs, {
     stdio: ['ignore', 'pipe', 'pipe']
   });
   relayProcess.stdout.on('data', (data) => {
@@ -108,8 +136,18 @@ function killRelay() {
 
 
 ipcMain.handle('get-hook-code', (e, url) => {
-  var hook = url.includes('telemost.yandex') ? hookTelemost : hookVk;
-  return logCapture + hook;
+  return loadHook(url);
+});
+
+ipcMain.handle('set-tunnel-mode', (e, mode) => {
+  if (['dc', 'pion-video'].indexOf(mode) !== -1) {
+    tunnelMode = mode;
+    killRelay();
+    setTimeout(function() {
+      startRelay();
+      console.log('[main] tunnel mode:', tunnelMode);
+    }, 500);
+  }
 });
 
 app.whenReady().then(() => {

@@ -1,6 +1,6 @@
 {
   "name": "whitelist-bypass-creator",
-  "version": "0.1.0",
+  "version": "0.1.5",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -18,7 +18,9 @@
     },
     "extraResources": [
       { "from": "../hooks/creator-vk.js", "to": "hooks/creator-vk.js" },
-      { "from": "../hooks/creator-telemost.js", "to": "hooks/creator-telemost.js" }
+      { "from": "../hooks/creator-telemost.js", "to": "hooks/creator-telemost.js" },
+      { "from": "../hooks/pion-vk.js", "to": "hooks/pion-vk.js" },
+      { "from": "../hooks/pion-telemost.js", "to": "hooks/pion-telemost.js" }
     ],
     "mac": {
       "target": "dmg",
